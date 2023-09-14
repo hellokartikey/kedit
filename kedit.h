@@ -21,7 +21,7 @@ enum MY_COLOR_PAIR { TEXT, STATUS_BAR };
 enum eMode { DEFAULT, COMMAND, INSERT, EXIT };
 
 struct kedit {
-  using line = std::vector<char>;
+  using line = std::string;
   using file = std::vector<line>;
 
   // Curses Variables
@@ -40,6 +40,7 @@ struct kedit {
   // Editor Attributes
   enum eMode mode = DEFAULT;
   bool show_debug_info = false;
+  bool restricted_cursor = false;
 
   std::string flash_msg = "";
 
@@ -76,7 +77,7 @@ struct kedit {
       open_file();
     } else {
       file_name = "";
-      flash("No file openned...");
+      flash("Empty window");
     }
 
   }
@@ -90,7 +91,7 @@ struct kedit {
     file_stream.open(file_name);
 
     if (file_stream.fail()) {
-      flash("Error openning file...");
+      flash("Error openning file");
       return;
     }
 
@@ -108,6 +109,11 @@ struct kedit {
       default:
         temp_line.push_back(inp);
       }
+    }
+    // Last line
+    if (temp_line.size()) {
+      temp_line.pop_back();
+      file_obj.push_back(temp_line);    
     }
 
     flash(fmt::format("Openned {}", file_name));
@@ -209,7 +215,27 @@ struct kedit {
     move_curs();
   }
 
+  void file_window() {
+    move(0,0);
+
+    if (! file_stream.is_open()) {
+      for (int y = 0; y < size_y; y++) {
+        printw("\n");
+      }
+
+      return;
+    }
+
+    for (auto& l: file_obj) {
+      for (auto& ch: l) {
+        printw("%c", ch);
+      }
+    }
+    move_curs();
+  }
+
   void default_mode() {
+    free_cursor();
     key_move_vim();
 
     switch (ch) {
@@ -251,6 +277,7 @@ struct kedit {
   }
 
   void insert_mode() {
+    restrict_cursor();
     key_esc_to_default();
   }
 
@@ -258,15 +285,9 @@ struct kedit {
 
     while (true) {
       if (mode == EXIT) break;
-
-      move(0,0);
-      for (auto& lin: file_obj) {
-        for (auto& cha: lin) {
-          printw("%c", cha);
-        }
-      }
-      move_curs();
       
+      file_window();
+
       status_bar();
 
       ch = getch();
@@ -299,6 +320,14 @@ struct kedit {
     }
   }
 
+  void restrict_cursor() {
+    restricted_cursor = true;
+  }
+
+  void free_cursor() {
+    restricted_cursor = false;
+  }
+
   void key_move() {
     switch(ch) {
     case KEY_LEFT:
@@ -313,9 +342,17 @@ struct kedit {
     case KEY_DOWN:
       inc_curs_y();
       break;
+    case KEY_HOME:
+      home_curs();
+      break;
+    case KEY_END:
+      end_curs();
+      break;
     }
 
     move_curs();
+    
+    restrict_curs_xy();
   }
 
   void key_move_vim() {
@@ -335,6 +372,8 @@ struct kedit {
     }
 
     move_curs();
+
+    restrict_curs_xy();
   }
 
   void move_curs() {
@@ -373,6 +412,38 @@ struct kedit {
     curs_y++;
   }
 
+  void home_curs() {
+    curs_x = 0;
+  }
+
+  void end_curs() {
+    if (file_obj.size()) {
+      curs_x = file_obj[curs_y].size() - 1;
+    }
+  }
+
+  void restrict_curs_xy() {
+    if (! restricted_cursor) return;
+
+    // Y
+    if (file_obj.size()) {
+      if (curs_y >= file_obj.size()) {
+        curs_y = file_obj.size() - 1;
+      }
+    } else {
+      curs_y = 0;
+    }
+
+    // X
+    if (file_obj.size()) {
+      if (curs_x >= file_obj[curs_y].size()) {
+        curs_x = file_obj[curs_y].size() - 1;
+      }
+    } else {
+      curs_x = 0;
+    }
+  }
+
   void flash(std::string message = "") {
     flash_msg = message;
   }
@@ -398,7 +469,7 @@ struct kedit {
       else if (s == "q") command_quit(cs);
 
       else {
-        flash("Command does not exist...");
+        flash("Command does not exist");
         mode = DEFAULT;
       }
     }
@@ -424,6 +495,7 @@ struct kedit {
 
   void command_close(std::stringstream& cs) {
     close_file();
+    mode = DEFAULT;
   }
 
   void command_debug(std::stringstream& cs) {
