@@ -8,3 +8,6 @@ TARGET = kedit
 
 all: $(SRC) $(HEADERS)
 	$(CXX) $(FLAGS) $(LINK) $(SRC) -o $(TARGET)
+
+install: all
+	install -s ./kedit ${HOME}/.local/bin

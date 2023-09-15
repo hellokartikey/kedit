@@ -9,6 +9,8 @@
 
 #include <fmt/core.h>
 
+#define VERSION "0.1"
+
 #define KEY_ESC 27
 
 enum COLOR {
@@ -549,7 +551,7 @@ struct kedit {
 
       // Open file
       if (s == "open") command_open(cs);
-      if (s == "o") command_open(cs);
+      else if (s == "o") command_open(cs);
 
       else if (s == "close") command_close(cs);
       else if (s == "c") command_close(cs);
@@ -560,6 +562,10 @@ struct kedit {
 
       // Debug info
       else if (s == "debug") command_debug(cs);
+
+      // Version info
+      else if (s == "version") command_version(cs);
+      else if (s == "v") command_version(cs);
 
       // Quit 
       else if (s == "quit") command_quit(cs);
@@ -618,7 +624,16 @@ struct kedit {
   }
 
   void command_save(std::stringstream& cs) {
+    if (! cs.eof()) {
+      cs >> file_name;
+    }
+    
     save_file();
+    mode = DEFAULT;
+  }
+
+  void command_version(std::stringstream& cs) {
+    flash(fmt::format("{}", VERSION));
     mode = DEFAULT;
   }
 };
