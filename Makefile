@@ -1,5 +1,5 @@
 CXX = g++
-FLAGS = -Wall
+FLAGS =
 LINK = -lncurses -lfmt
 
 SRC = main.cc

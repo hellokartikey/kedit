@@ -67,8 +67,10 @@ struct kedit {
     size_y = max_y - 1;
 
     init_pair(STATUS_BAR, BLACK, WHITE);
-    init_pair(TEXT, 15, BLACK);
+    init_pair(TEXT, WHITE, BLACK);
 
+    clear_file_obj();
+  
     // Command line arguements
     if (argc > 2) {
       std::cerr << "Too many arguements" << std::endl;
@@ -80,6 +82,7 @@ struct kedit {
       flash("Empty window");
     }
 
+
   }
 
   ~kedit() {
@@ -88,42 +91,73 @@ struct kedit {
   }
 
   void open_file() {
-    file_stream.open(file_name);
+    file_stream.open(file_name, std::ios_base::in);
 
+    // If file does not exist
     if (file_stream.fail()) {
-      flash("Error openning file");
+      flash("Could not open file, creating new file");
+      file_stream.clear();
       return;
     }
 
-    char inp;
-    line temp_line;
-    while (! file_stream.eof()) {
-      file_stream >> std::noskipws >> inp;
+    // Clear file_obj
+    file_obj.clear();
 
-      switch (inp) {
-      case '\n':
-        temp_line.push_back(inp);
-        file_obj.push_back(temp_line);
-        temp_line.clear();
+    char read;
+    line current_line = "";
+    while (true) {
+      file_stream >> std::noskipws >> read;
+
+      if (file_stream.eof()) {
+        file_obj.push_back(current_line);
         break;
-      default:
-        temp_line.push_back(inp);
+      };
+
+      current_line.push_back(read);
+
+      if (read == '\n') {
+        file_obj.push_back(current_line);
+        current_line = "";
       }
-    }
-    // Last line
-    if (temp_line.size()) {
-      temp_line.pop_back();
-      file_obj.push_back(temp_line);    
+
+      flash(current_line);
     }
 
-    flash(fmt::format("Openned {}", file_name));
+    file_stream.close();
+
+    flash(fmt::format("Opened {}", file_name));
+  }
+
+  void save_file() {
+    flash("Saving...");
+    file_stream.open(file_name, std::ios_base::out | std::ios_base::trunc);
+
+    if (file_stream.fail()) {
+      file_stream.clear();
+      file_stream.close();
+      flash("Error saving file");
+      return;
+    }
+
+    for (auto& line: file_obj) {
+      file_stream << line;
+    }
+
+
+    file_stream.close();
+
+    flash("Saved");
   }
 
   void close_file() {
     file_stream.close();
-    file_obj.clear();
+    clear_file_obj();
 
     flash("File closed");
+  }
+
+  void clear_file_obj() {
+    file_obj = { "" };
   }
 
   void status_bar() {
@@ -165,7 +199,10 @@ struct kedit {
     // Print current input
     std::string debug_inp = "";
     if (show_debug_info) {
-      debug_inp = fmt::format("INP: {:x} {} ", ch, ch);
+      debug_inp = fmt::format("INP: {:x}", ch);
+      int x, y;
+      getyx(win, y, x);
+      debug_inp += fmt::format(" POS: ({} {}) ", x, y);
     }
 
     // Arrange everything into streams
@@ -216,26 +253,21 @@ struct kedit {
   }
 
   void file_window() {
-    move(0,0);
+    move(0, 0);
 
-    if (! file_stream.is_open()) {
-      for (int y = 0; y < size_y; y++) {
-        printw("\n");
-      }
-
-      return;
+    for (auto& line_str: file_obj) {
+      printw("%s", line_str.c_str(), line_str.size());
     }
 
-    for (auto& l: file_obj) {
-      for (auto& ch: l) {
-        printw("%c", ch);
-      }
+    int y = getcury(win);
+    while (y++ <= size_y) {
+      printw("\n");
     }
+
     move_curs();
   }
 
   void default_mode() {
-    free_cursor();
     key_move_vim();
 
     switch (ch) {
@@ -277,8 +309,73 @@ struct kedit {
   }
 
   void insert_mode() {
-    restrict_cursor();
+
+    if (0x20 <= ch && ch <= 0x7f) {
+      file_obj[curs_y].insert(curs_x, 1, char(ch));
+      inc_curs_x();
+    }
+
+    switch (ch) {
+    case KEY_BACKSPACE:
+      insert_backspace();
+      break;
+    case KEY_DC:
+      insert_delete();
+      break;
+    case KEY_ENTER:
+    case '\n':
+      insert_line();
+      break;
+    }
+
     key_esc_to_default();
+  }
+
+  void insert_backspace() {
+    if (curs_x == 0) {
+      if (curs_y) {
+        dec_curs_y();
+        end_curs();
+        file_obj[curs_y].pop_back();
+        file_obj[curs_y] += file_obj[curs_y + 1];
+        file_obj.erase(file_obj.begin() + curs_y + 1);
+      }
+
+      return;
+    }
+    file_obj[curs_y].erase(curs_x - 1, 1);
+    dec_curs_x();
+  }
+
+  void insert_delete() {
+    if (curs_x == file_obj[curs_y].size() - 1) {
+      if (curs_y == file_obj.size() - 1) return;
+      file_obj[curs_y].pop_back();
+
+      if (file_obj[curs_y].size() == 0) {
+        file_obj.erase(file_obj.begin() + curs_y);
+      }
+
+      if (file_obj.size() == 0) {
+        line temp = "\n";
+        file_obj.push_back(temp);
+      }
+
+      return;
+    }
+
+    file_obj[curs_y].erase(curs_x, 1);
+  }
+
+  void insert_line() {
+    line temp_line_break = file_obj[curs_y].substr(0, curs_x) + '\n';
+    line temp_line_new = file_obj[curs_y].substr(curs_x, file_obj[curs_y].size());
+
+    file_obj.insert(file_obj.begin() + curs_y + 1, temp_line_new);
+    file_obj[curs_y] = temp_line_break;
+
+    inc_curs_y();
+    home_curs();
   }
 
   void run() {
@@ -289,6 +386,8 @@ struct kedit {
       file_window();
 
       status_bar();
+
+      restrict_curs_xy();
 
       ch = getch();
 
@@ -318,14 +417,6 @@ struct kedit {
       mode = DEFAULT;
       break;
     }
-  }
-
-  void restrict_cursor() {
-    restricted_cursor = true;
-  }
-
-  void free_cursor() {
-    restricted_cursor = false;
   }
 
   void key_move() {
@@ -423,7 +514,7 @@ struct kedit {
   }
 
   void restrict_curs_xy() {
-    if (! restricted_cursor) return;
+    if (mode != INSERT) return;
 
     // Y
     if (file_obj.size()) {
@@ -435,9 +526,9 @@ struct kedit {
     }
 
     // X
-    if (file_obj.size()) {
-      if (curs_x >= file_obj[curs_y].size()) {
-        curs_x = file_obj[curs_y].size() - 1;
+    if (int line_size = file_obj[curs_y].size()) {
+      if (curs_x >= line_size) {
+        curs_x = line_size;
       }
     } else {
       curs_x = 0;
@@ -458,7 +549,14 @@ struct kedit {
 
       // Open file
       if (s == "open") command_open(cs);
+      if (s == "o") command_open(cs);
+
       else if (s == "close") command_close(cs);
+      else if (s == "c") command_close(cs);
+
+      // Save file
+      else if (s == "save") command_save(cs);
+      else if (s == "s") command_save(cs);
 
       // Debug info
       else if (s == "debug") command_debug(cs);
@@ -468,10 +566,7 @@ struct kedit {
       else if (s == "exit") command_quit(cs);
       else if (s == "q") command_quit(cs);
 
-      else {
-        flash("Command does not exist");
-        mode = DEFAULT;
-      }
+      else command_default(cs);
     }
 
     // Reset the command stream
@@ -479,6 +574,11 @@ struct kedit {
     cmd_x = 0;
 
     move_curs();
+  }
+
+  void command_default(std::stringstream& cs) {
+    flash("Command does not exist");
+    mode = DEFAULT;
   }
 
   void command_open(std::stringstream& cs) {
@@ -515,5 +615,10 @@ struct kedit {
 
   void command_quit(std::stringstream& cs) {
     mode = EXIT;
+  }
+
+  void command_save(std::stringstream& cs) {
+    save_file();
+    mode = DEFAULT;
   }
 };
