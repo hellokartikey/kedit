@@ -1,7 +1,7 @@
 #include "kedit.h"
 
-int main(int argc, char** argv) {
-    kedit editor(argc, argv);
+auto main(int argc, char* argv[]) -> int {
+    auto editor = kedit{argc, argv};
 
     editor.run();
 

@@ -1,6 +1,10 @@
 #include "kedit.h"
 
-kedit::kedit(int argc, char** argv) {
+#include <fmt/core.h>
+
+using namespace std::literals;
+
+kedit::kedit(int argc, char* argv[]) {
   // Initialize curses
   win = initscr();
 
@@ -31,7 +35,7 @@ kedit::kedit(int argc, char** argv) {
 
   // Command line arguements
   if (argc > 2) {
-    std::cerr << "Too many arguements" << std::endl;
+    fmt::print(stderr, "Too many arguements\n");
   } else if (argc == 2) {
     file_name = argv[1];
     file_open();
@@ -47,7 +51,7 @@ kedit::~kedit() {
   endwin();
 }
 
-void kedit::file_open() {
+auto kedit::file_open() -> void {
   file_stream.open(file_name, std::ios_base::in);
 
   // If file does not exist
@@ -85,7 +89,7 @@ void kedit::file_open() {
   flash(fmt::format("Opened {}", file_name));
 }
 
-void kedit::file_save() {
+auto kedit::file_save() -> void {
   flash("Saving...");
   file_stream.open(file_name, std::ios_base::out | std::ios_base::trunc);
 
@@ -106,21 +110,21 @@ void kedit::file_save() {
   flash("Saved");
 }
 
-void kedit::file_close() {
+auto kedit::file_close() -> void {
   file_stream.close();
   clear_file_obj();
 
   flash("File closed");
 }
 
-void kedit::clear_file_obj() {
+auto kedit::clear_file_obj() -> void {
   file_obj = { "" };
 }
 
-void kedit::status_bar() {
+auto kedit::status_bar() -> void {
   // Clear streams
-  std::stringstream status_left;
-  std::stringstream status_right;
+  cstream status_left;
+  cstream status_right;
 
   // Set status bar color
   attrset(COLOR_PAIR(STATUS_BAR));
@@ -211,7 +215,7 @@ void kedit::status_bar() {
   curs_move();
 }
 
-void kedit::scroll_bar() {
+auto kedit::scroll_bar() -> void {
   point bar {win_br.x + 1, win_tl.y};
   point bar_end {win_br.x + 1, win_br.y};
 
@@ -221,7 +225,7 @@ void kedit::scroll_bar() {
 
 }
 
-void kedit::file_window() {
+auto kedit::file_window() -> void {
   curs = win_tl;
 
   for (auto& line_str: file_obj) {
@@ -239,7 +243,7 @@ void kedit::file_window() {
   curs_move();
 }
 
-void kedit::mode_default() {
+auto kedit::mode_default() -> void {
   key_move_vim();
 
   switch (ch) {
@@ -258,7 +262,7 @@ void kedit::mode_default() {
   }
 }
 
-void kedit::mode_command() {
+auto kedit::mode_command() -> void {
   flash();
 
   if (30 <= ch && ch <= 127) command_input.push_back(char(ch));
@@ -280,7 +284,7 @@ void kedit::mode_command() {
   key_esc_to_default();
 }
 
-void kedit::mode_insert() {
+auto kedit::mode_insert() -> void {
 
   if (0x20 <= ch && ch <= 0x7f) {
     insert_char();
@@ -302,13 +306,13 @@ void kedit::mode_insert() {
   key_esc_to_default();
 }
 
-void kedit::insert_char() {
+auto kedit::insert_char() -> void {
   point index = {curs.x - win_tl.x, curs.y - win_tl.y};
   file_obj[index.y] += char(ch);
   curs_inc_x();
 }
 
-void kedit::insert_backspace() {
+auto kedit::insert_backspace() -> void {
   if (curs.x == 0) {
     if (curs.y) {
       curs_dec_y();
@@ -324,7 +328,7 @@ void kedit::insert_backspace() {
   curs_dec_x();
 }
 
-void kedit::insert_delete() {
+auto kedit::insert_delete() -> void {
   if (curs.x == file_obj[curs.y].size() - 1) {
     if (curs.y == file_obj.size() - 1) return;
     file_obj[curs.y].pop_back();
@@ -344,7 +348,7 @@ void kedit::insert_delete() {
   file_obj[curs.y].erase(curs.x, 1);
 }
 
-void kedit::insert_line() {
+auto kedit::insert_line() -> void {
   line temp_line_break = file_obj[curs.y].substr(0, curs.x) + '\n';
   line temp_line_new = file_obj[curs.y].substr(curs.x, file_obj[curs.y].size());
 
@@ -355,12 +359,12 @@ void kedit::insert_line() {
   curs_home();
 }
 
-void kedit::run() {
+auto kedit::run() -> void {
 
   while (true) {
     if (mode == EXIT) break;
 
-    file_window();
+    // file_window();
 
     status_bar();
 
@@ -390,7 +394,7 @@ void kedit::run() {
   }
 }
 
-void kedit::key_esc_to_default() {
+auto kedit::key_esc_to_default() -> void {
   switch (ch) {
   case KEY_ESC:
     mode = DEFAULT;
@@ -398,7 +402,7 @@ void kedit::key_esc_to_default() {
   }
 }
 
-void kedit::key_move() {
+auto kedit::key_move() -> void {
   switch(ch) {
   case KEY_LEFT:
     curs_dec_x();
@@ -425,7 +429,7 @@ void kedit::key_move() {
   curs_restrict_yx();
 }
 
-void kedit::key_move_vim() {
+auto kedit::key_move_vim() -> void {
   switch(ch) {
   case 'h':
     curs_dec_x();
@@ -446,11 +450,11 @@ void kedit::key_move_vim() {
   curs_restrict_yx();
 }
 
-void kedit::curs_move() {
+auto kedit::curs_move() -> void {
   move(curs.y, curs.x);
 }
 
-void kedit::curs_dec_x() {
+auto kedit::curs_dec_x() -> void {
   if (curs.x == win_tl.x && curs.y == win_tl.y) return;
 
   if (curs.x == win_tl.x) {
@@ -461,13 +465,13 @@ void kedit::curs_dec_x() {
   curs.x--;
 }
 
-void kedit::curs_dec_y() {
+auto kedit::curs_dec_y() -> void {
   if (curs.y == win_tl.y) return;
 
   curs.y--;
 }
 
-void kedit::curs_inc_x() {
+auto kedit::curs_inc_x() -> void {
   if (curs.x == win_br.x && curs.y == win_br.y) return;
 
   curs.x++;
@@ -477,16 +481,16 @@ void kedit::curs_inc_x() {
   }
 }
 
-void kedit::curs_inc_y() {
+auto kedit::curs_inc_y() -> void {
   if (curs.y == win_br.y) return;
   curs.y++;
 }
 
-void kedit::curs_home() {
+auto kedit::curs_home() -> void {
   curs.x = win_tl.x;
 }
 
-void kedit::curs_end() {
+auto kedit::curs_end() -> void {
   if (file_obj[curs.y].size()) {
     curs.x = file_obj[curs.y].size() - 1;
   } else {
@@ -494,7 +498,7 @@ void kedit::curs_end() {
   }
 }
 
-void kedit::curs_restrict_yx() {
+auto kedit::curs_restrict_yx() -> void {
   if (mode != INSERT) return;
 
   // Y
@@ -519,12 +523,12 @@ void kedit::curs_restrict_yx() {
   }
 }
 
-void kedit::flash(std::string message) {
+auto kedit::flash(std::string message) -> void {
   flash_msg = message;
 }
 
-void kedit::command_parse() {
-  std::stringstream cs;
+auto kedit::command_parse() -> void {
+  cstream cs;
   for (auto& c: command_input) cs << c;
 
   while (! cs.eof()) {
@@ -564,12 +568,12 @@ void kedit::command_parse() {
   curs_move();
 }
 
-void kedit::command_default(std::stringstream& cs) {
+auto kedit::command_default(cstream& cs) -> void {
   flash("Command does not exist");
   mode = DEFAULT;
 }
 
-void kedit::command_open(std::stringstream& cs) {
+auto kedit::command_open(cstream& cs) -> void {
   if (cs.eof()) {
     flash("No file name provided");
     return;
@@ -581,12 +585,12 @@ void kedit::command_open(std::stringstream& cs) {
   mode = INSERT;
 }
 
-void kedit::command_close(std::stringstream& cs) {
+auto kedit::command_close(cstream& cs) -> void {
   file_close();
   mode = DEFAULT;
 }
 
-void kedit::command_debug(std::stringstream& cs) {
+auto kedit::command_debug(cstream& cs) -> void {
   // If no arguements, toggle true/false
   if (cs.eof()) {
     show_debug_info = ! show_debug_info;
@@ -601,11 +605,11 @@ void kedit::command_debug(std::stringstream& cs) {
   mode = DEFAULT;
 }
 
-void kedit::command_quit(std::stringstream& cs) {
+auto kedit::command_quit(cstream& cs) -> void {
   mode = EXIT;
 }
 
-void kedit::command_save(std::stringstream& cs) {
+auto kedit::command_save(cstream& cs) -> void {
   if (! cs.eof()) {
     cs >> file_name;
   }
@@ -614,7 +618,7 @@ void kedit::command_save(std::stringstream& cs) {
   mode = DEFAULT;
 }
 
-void kedit::command_version(std::stringstream& cs) {
+auto kedit::command_version(cstream& cs) -> void {
   flash(fmt::format("{}", VERSION));
   mode = DEFAULT;
 }

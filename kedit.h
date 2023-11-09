@@ -1,13 +1,9 @@
-#include <cstdio>
 #include <fstream>
-#include <iostream>
 #include <string>
 #include <sstream>
 #include <vector>
 
 #include <curses.h>
-
-#include <fmt/core.h>
 
 #define VERSION "0.1"
 
@@ -17,6 +13,8 @@ struct kedit {
   using line = std::string;
 
   using file = std::vector<line>;
+
+  using cstream = std::stringstream;
 
   enum COLOR { BLACK = 0, WHITE = 15 };
 
@@ -63,50 +61,50 @@ struct kedit {
   // Commands
   line command_input;
 
-  kedit(int argc, char** argv);
+  kedit(int argc, char* argv[]);
   ~kedit();
 
-  void file_open();
-  void file_save();
-  void file_close();
-  void clear_file_obj();
+  auto file_open() -> void;
+  auto file_save() -> void;
+  auto file_close() -> void;
+  auto clear_file_obj() -> void;
 
-  void status_bar();
-  void scroll_bar();
-  void file_window();
+  auto status_bar() -> void;
+  auto scroll_bar() -> void;
+  auto file_window() -> void;
 
-  void mode_default();
-  void mode_command();
-  void mode_insert();
+  auto mode_default() -> void;
+  auto mode_command() -> void;
+  auto mode_insert() -> void;
 
-  void insert_char();
-  void insert_backspace();
-  void insert_delete();
-  void insert_line();
+  auto insert_char() -> void;
+  auto insert_backspace() -> void;
+  auto insert_delete() -> void;
+  auto insert_line() -> void;
 
-  void run();
+  auto run() -> void;
 
-  void key_esc_to_default();
-  void key_move();
-  void key_move_vim();
+  auto key_esc_to_default() -> void;
+  auto key_move() -> void;
+  auto key_move_vim() -> void;
 
-  void curs_move();
-  void curs_dec_x();
-  void curs_dec_y();
-  void curs_inc_x();
-  void curs_inc_y();
-  void curs_home();
-  void curs_end();
-  void curs_restrict_yx();
+  auto curs_move() -> void;
+  auto curs_dec_x() -> void;
+  auto curs_dec_y() -> void;
+  auto curs_inc_x() -> void;
+  auto curs_inc_y() -> void;
+  auto curs_home() -> void;
+  auto curs_end() -> void;
+  auto curs_restrict_yx() -> void;
 
-  void flash(std::string message = "");
+  auto flash(std::string message = "") -> void;
 
-  void command_parse();
-  void command_default(std::stringstream& cs);
-  void command_open(std::stringstream& cs);
-  void command_close(std::stringstream& cs);
-  void command_debug(std::stringstream& cs);
-  void command_quit(std::stringstream& cs);
-  void command_save(std::stringstream& cs);
-  void command_version(std::stringstream& cs);
+  auto command_parse() -> void;
+  auto command_default(cstream& cs) -> void;
+  auto command_open(cstream& cs) -> void;
+  auto command_close(cstream& cs) -> void;
+  auto command_debug(cstream& cs) -> void;
+  auto command_quit(cstream& cs) -> void;
+  auto command_save(cstream& cs) -> void;
+  auto command_version(cstream& cs) -> void;
 };
