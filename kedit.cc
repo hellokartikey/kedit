@@ -1,5 +1,8 @@
 #include "kedit.h"
+#include "common.h"
+#include "status.h"
 
+#include <curses.h>
 #include <fmt/core.h>
 
 using namespace std::literals;
@@ -11,36 +14,29 @@ kedit::kedit(int argc, char* argv[]) {
   raw();
   noecho();
   keypad(win, true);
-  start_color();
 
   getmaxyx(win, max.y, max.x);
+
   min = {0, 0};
+  size = max - point{2, 2};
+  win_tl = {1, 0};
+  win_br = win_tl + size - point{1, 0};
+  curs = win_tl;
 
-  size.x = max.x - 2;
-  size.y = max.y - 2;
+  status_bar.init(this, {0, max.y - 1}, {max.x, max.y - 1});
 
-  win_tl.x = 1;
-  win_tl.y = 0;
+  color_init();
 
-  win_br.x = win_tl.x + size.x - 1;
-  win_br.y = win_tl.y + size.y;
-
-  curs.x = win_tl.x;
-  curs.y = win_tl.y;
-
-  init_pair(STATUS_BAR, BLACK, WHITE);
-  init_pair(TEXT, WHITE, BLACK);
-
-  clear_file_obj();
+  file_clear();
 
   // Command line arguements
-  if (argc > 2) {
+  if ( argc > 2 ) {
     fmt::print(stderr, "Too many arguements\n");
-  } else if (argc == 2) {
+  } else if ( argc == 2 ) {
     file_name = argv[1];
     file_open();
   } else {
-    file_name = "";
+    file_name = ""s;
     flash("Empty window");
   }
 
@@ -51,11 +47,31 @@ kedit::~kedit() {
   endwin();
 }
 
+auto kedit::color_init() -> void {
+  if ( not has_colors() ) {
+    fmt::print(stderr, "This terminal does not support colors\n");
+    return;
+  }
+
+  if ( not can_change_color() ) {
+    fmt::print(stderr, "This terminal does not support custom colors\n");
+    return;
+  }
+
+  start_color();
+
+  init_color(COLOR_BLACK, 0, 0, 0);
+  init_color(COLOR_WHITE, 1000, 1000, 1000);
+
+  init_pair(BLACK_WHITE, COLOR_BLACK, COLOR_WHITE);
+  init_pair(WHITE_BLACK, COLOR_WHITE, COLOR_BLACK);
+}
+
 auto kedit::file_open() -> void {
   file_stream.open(file_name, std::ios_base::in);
 
   // If file does not exist
-  if (file_stream.fail()) {
+  if ( file_stream.fail() ) {
     flash("Could not open file, creating new file");
     file_stream.clear();
     return;
@@ -64,24 +80,9 @@ auto kedit::file_open() -> void {
   // Clear file_obj
   file_obj.clear();
 
-  char read;
-  line current_line = "";
-  while (true) {
-    file_stream >> std::noskipws >> read;
-
-    if (file_stream.eof()) {
-      file_obj.push_back(current_line);
-      break;
-    };
-
-    current_line.push_back(read);
-
-    if (read == '\n') {
-      file_obj.push_back(current_line);
-      current_line = "";
-    }
-
-    flash(current_line);
+  auto readline = line{};
+  while ( std::getline(file_stream, readline) ) {
+    file_obj.push_back(readline);
   }
 
   file_stream.close();
@@ -93,17 +94,17 @@ auto kedit::file_save() -> void {
   flash("Saving...");
   file_stream.open(file_name, std::ios_base::out | std::ios_base::trunc);
 
-  if (file_stream.fail()) {
+  if ( file_stream.fail() ) {
     file_stream.clear();
     file_stream.close();
     flash("Error saving file");
     return;
   }
 
-  for (auto& line: file_obj) {
-    file_stream << line;
+  // Inserts a new empty line at end of the file if not exist
+  for ( const auto& line: file_obj ) {
+    file_stream << line << "\n";
   }
-
 
   file_stream.close();
 
@@ -112,107 +113,13 @@ auto kedit::file_save() -> void {
 
 auto kedit::file_close() -> void {
   file_stream.close();
-  clear_file_obj();
+  file_clear();
 
   flash("File closed");
 }
 
-auto kedit::clear_file_obj() -> void {
-  file_obj = { "" };
-}
-
-auto kedit::status_bar() -> void {
-  // Clear streams
-  cstream status_left;
-  cstream status_right;
-
-  // Set status bar color
-  attrset(COLOR_PAIR(STATUS_BAR));
-
-  // Print current mode of the editor
-  std::string mode_str;
-  switch (mode) {
-  case DEFAULT:
-    mode_str = "DEFAULT";
-    break;
-  case COMMAND:
-    mode_str = "COMMAND";
-    break;
-  case INSERT:
-    mode_str = "INSERT";
-    break;
-  default:
-    break;
-  }
-  mode_str += " ";
-
-  // Print current command
-  // std::string cmd(command_input.begin(), command_input.end());
-  std::string cmd = "";
-  if (command_input.size()) {
-    cmd = std::string(command_input.begin(), command_input.end());
-  }
-
-  // Print current cursor coordinates
-  std::string coord_fmt = fmt::format("({}, {}) ", curs.x, curs.y);
-
-  // DEBUG
-  // Print current input
-  std::string debug_inp = "";
-  if (show_debug_info) {
-    point index = {curs.x - win_tl.x, curs.y - win_tl.y};
-    debug_inp = fmt::format("({}, {}) ", index.x, index.y);
-
-    std::string s = "";
-    s.insert(0, 1, 'c');
-    debug_inp += fmt::format("s = {} ", s);
-  }
-
-  // Arrange everything into streams
-  status_right << debug_inp;
-  status_right << coord_fmt;
-  status_right << mode_str; 
-
-  status_left << flash_msg;
-  status_left << cmd;
-
-
-  // Pad the remaining bar with white space
-  int len_left = status_left.str().size();
-  int len_right = status_right.str().size();
-
-  // Move to location of status bar
-  move(max.y - 1, 0);
-
-  // Print left side of the status bar
-  while (true) {
-    std::string str;
-    status_left >> str;
-
-    printw("%s ", str.c_str());
-
-    if (status_left.eof()) break;
-
-  }
-
-  // Print middle whitespace
-  for (int i = 0; i < max.x - len_left - len_right - 1; i++) {
-    printw(" ");
-  }
-
-  // Print right side of the status bar
-  while (true) {
-    std::string str;
-    status_right >> str;
-
-    if (status_right.eof()) break;
-
-    printw(" %s", str.c_str());
-  }
-
-  // Reset cursor and color
-  attrset(COLOR_PAIR(TEXT));
-  curs_move();
+auto kedit::file_clear() -> void {
+  file_obj.clear();
 }
 
 auto kedit::scroll_bar() -> void {
@@ -228,8 +135,8 @@ auto kedit::scroll_bar() -> void {
 auto kedit::file_window() -> void {
   curs = win_tl;
 
-  for (auto& line_str: file_obj) {
-    for (auto& _: line_str) {
+  for ( const auto& line_str: file_obj ) {
+    for ( const auto& _: line_str ) {
       mvaddch(curs.y, curs.x, _);
       curs_inc_x();
     }
@@ -364,9 +271,9 @@ auto kedit::run() -> void {
   while (true) {
     if (mode == EXIT) break;
 
-    // file_window();
+    file_window();
 
-    status_bar();
+    status_bar.render();
 
     scroll_bar();
 
@@ -622,3 +529,11 @@ auto kedit::command_version(cstream& cs) -> void {
   flash(fmt::format("{}", VERSION));
   mode = DEFAULT;
 }
+
+auto kedit::get_command() -> std::string const { return command_input; }
+
+auto kedit::get_flash() -> std::string const { return flash_msg; }
+
+auto kedit::get_curs() -> point const { return curs; }
+
+auto kedit::get_mode() -> enum modes const { return mode; }

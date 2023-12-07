@@ -12,6 +12,9 @@ add_executable(
   ${PROJECT_NAME}
   main.cc
   kedit.cc
+  point.cc
+  frame.cc
+  status.cc
 )
 
 target_link_libraries(
