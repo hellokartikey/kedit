@@ -10,12 +10,13 @@ class frame {
  public:
   frame();
 
-  auto init(kedit* editor, point tl, point br) -> void;
+  auto init(kedit* editor) -> void;
+  auto resize(point tl, point br) -> void;
 
-  auto set_editor(kedit* editor) -> void;
   auto get_editor() -> kedit*;
+  auto set_editor(kedit* editor) -> void;
 
-  auto get_curs() -> point;
+  auto get_curs() const -> const point;
   auto set_curs(point p) -> void;
 
   auto get_coord() -> point;
@@ -31,6 +32,9 @@ class frame {
   auto curs_dec_y() -> void;
   auto curs_inc_x() -> void;
   auto curs_inc_y() -> void;
+  auto curs_restrict() -> void;
+  auto curs_home() -> void;
+  auto curs_end() -> void;
 
   virtual auto render() -> void {}
 

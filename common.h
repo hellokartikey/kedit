@@ -6,7 +6,7 @@
 
 using line = std::string;
 
-using file = std::vector<line>;
+using file_vec = std::vector<line>;
 
 using cstream = std::stringstream;
 

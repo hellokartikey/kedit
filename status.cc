@@ -3,13 +3,13 @@
 #include <fmt/core.h>
 
 #include "common.h"
+#include "file.h"
 #include "kedit.h"
 
 auto status::render() -> void {
   // Set Black on White
   attrset(COLOR_PAIR(BLACK_WHITE));
 
-  clear();
   begin();
 
   auto l_str = std::string{};
@@ -26,8 +26,14 @@ auto status::render() -> void {
   }
 
   // Cursor Position
-  auto edit_curs = editor->get_curs();
-  r_str += fmt::format("[{}, {}] ", edit_curs.x, edit_curs.y);
+  const auto& file_obj = editor->get_file();
+  auto edit_curs = editor->get_file_frame().get_curs();
+  r_str += fmt::format(
+    "[{0}/{2}, {1}] ",
+    edit_curs.y + 1,
+    edit_curs.x + 1,
+    file_obj.size()
+    );
 
   // Mode
   switch ( editor->get_mode() ) {
@@ -52,11 +58,6 @@ auto status::render() -> void {
   printw("%s", status_bar.c_str());
 
   attrset(COLOR_PAIR(WHITE_BLACK));
-}
-
-auto status::clear() -> void {
-  begin();
-  printw("\n");
 }
 
 auto status::begin() -> void {

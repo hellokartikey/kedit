@@ -15,6 +15,7 @@ add_executable(
   point.cc
   frame.cc
   status.cc
+  file.cc
 )
 
 target_link_libraries(

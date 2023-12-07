@@ -8,7 +8,6 @@ class status : public frame {
   auto render() -> void override;
 
  private:
-  auto clear() -> void;
   auto begin() -> void;
 };
 

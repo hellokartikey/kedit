@@ -9,6 +9,7 @@
 #include <curses.h>
 
 #include "common.h"
+#include "file.h"
 #include "point.h"
 #include "status.h"
 
@@ -30,33 +31,17 @@ class kedit {
   auto file_close() -> void;
   auto file_clear() -> void;
 
-  // auto status_bar() -> void;
-  auto scroll_bar() -> void;
-  auto file_window() -> void;
-
   auto mode_default() -> void;
   auto mode_command() -> void;
   auto mode_insert() -> void;
 
-  auto insert_char() -> void;
-  auto insert_backspace() -> void;
-  auto insert_delete() -> void;
-  auto insert_line() -> void;
+  auto frames_resize() -> void;
 
   auto run() -> void;
 
   auto key_esc_to_default() -> void;
   auto key_move() -> void;
   auto key_move_vim() -> void;
-
-  auto curs_move() -> void;
-  auto curs_dec_x() -> void;
-  auto curs_dec_y() -> void;
-  auto curs_inc_x() -> void;
-  auto curs_inc_y() -> void;
-  auto curs_home() -> void;
-  auto curs_end() -> void;
-  auto curs_restrict_yx() -> void;
 
   auto flash(std::string message = ""s) -> void;
 
@@ -70,10 +55,14 @@ class kedit {
   auto command_version(cstream& cs) -> void;
 
  public:
-  auto get_command() -> std::string const;
-  auto get_flash() -> std::string const;
-  auto get_curs() -> point const;
-  auto get_mode() -> enum modes const;
+  auto get_command() -> const std::string&;
+  auto get_flash() -> const std::string&;
+  auto get_file() -> file_vec&;
+  auto get_mode() -> enum modes;
+  auto get_debug_status() -> bool;
+  auto get_size() -> const point&;
+  auto get_file_frame() -> const file&;
+  auto get_status_bar() -> const status&;
 
  private:
   // Curses Variables
@@ -81,19 +70,10 @@ class kedit {
 
   // Max coordinates of the entire window
   point max;
-  point min;
-
-  // Max coordinates of the text window
-  point size;
-
-  // Coordinates of the text window
-  point win_tl, win_br;
-
-  // Cursor coordinates
-  point curs;
 
   // Status Bar
   status status_bar;
+  file file_win;
 
   // Command cursor position
   int cmd_x;
@@ -104,13 +84,12 @@ class kedit {
   // Editor Attributes
   modes mode = DEFAULT;
   bool show_debug_info = true;
-  bool restricted_cursor = false;
 
-  std::string flash_msg = "";
+  std::string flash_msg = ""s;
 
   // File Handeling
   std::fstream file_stream;
-  file file_obj;
+  file_vec file_obj;
   std::string file_name;
 
   // Commands
