@@ -74,9 +74,9 @@ auto frame::curs_inc_y() -> void {
 }
 
 auto frame::curs_restrict() -> void {
-  if ( editor->get_mode() != INSERT ) return;
+  if ( editor->mode != INSERT ) return;
 
-  const auto& file_obj = editor->get_file();
+  const auto& file_obj = editor->file_obj;
 
   if ( curs.y >= file_obj.size() ) {
     curs.y = file_obj.size();
@@ -96,6 +96,6 @@ auto frame::curs_home() -> void {
 }
 
 auto frame::curs_end() -> void {
-  const auto& file_obj = editor->get_file();
+  const auto& file_obj = editor->file_obj;
   curs.x = file_obj[curs.y].size();
 }

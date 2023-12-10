@@ -366,19 +366,3 @@ auto kedit::command_version() -> void {
   flash(fmt::format("{}", VERSION));
   mode = DEFAULT;
 }
-
-auto kedit::get_command() -> const std::string& { return command_input; }
-
-auto kedit::get_flash() -> const std::string& { return flash_msg; }
-
-auto kedit::get_mode() -> enum modes { return mode; }
-
-auto kedit::get_file() -> file_vec& { return file_obj; }
-
-auto kedit::get_debug_status() -> bool { return show_debug_info; }
-
-auto kedit::get_size() -> const point& { return max; }
-
-auto kedit::get_file_frame() -> const file& { return file_win; }
-
-auto kedit::get_status_bar() -> const status& { return status_bar; }

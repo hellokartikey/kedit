@@ -9,8 +9,8 @@ auto file::render() -> void {
 
   begin();
 
-  const auto& file_obj = editor->get_file();
-  for ( const auto& l: file_obj ) {
+  const auto& file_obj = editor->file_obj;
+  for ( const auto& l: editor->file_obj ) {
     curs_home();
 
     curs_move();
@@ -33,7 +33,7 @@ auto file::render() -> void {
 }
 
 auto file::insert_char(char ch) -> void {
-  auto& file_obj = editor->get_file();
+  auto& file_obj = editor->file_obj;
 
   if ( curs.y < file_obj.size() ) {
     file_obj[curs.y].insert(curs.x, 1, ch);
@@ -45,7 +45,7 @@ auto file::insert_char(char ch) -> void {
 }
 
 auto file::insert_backspace() -> void {
-  auto& file_obj = editor->get_file();
+  auto& file_obj = editor->file_obj;
 
   if ( curs.x ) {
     file_obj[curs.y].erase(curs.x - 1, 1);
@@ -65,14 +65,14 @@ auto file::insert_backspace() -> void {
 }
 
 auto file::insert_delete() -> void {
-  auto& file_obj = editor->get_file();
-  auto max = editor->get_size();
+  auto& file_obj = editor->file_obj;
+  auto max = editor->max;
 
   // TODO
 }
 
 auto file::insert_line() -> void {
-  auto& file_obj = editor->get_file();
+  auto& file_obj = editor->file_obj;
 
   auto idx = curs;
 

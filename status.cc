@@ -16,23 +16,23 @@ auto status::render() -> void {
   auto r_str = std::string{};
 
   // Command
-  if ( editor->get_command().size() ) {
-    l_str += editor->get_command() + " ";
+  if ( editor->command_input.size() ) {
+    l_str += editor->command_input;
   }
 
   // Flashed Message
-  if ( editor->get_flash().size() ) {
-    l_str += editor->get_flash() + " ";
+  if ( editor->flash_msg.size() ) {
+    l_str += editor->flash_msg;
   }
 
   // Debug Info
-  if ( editor->get_debug_status() ) {
+  if ( editor->show_debug_info ) {
     r_str += "DEBUG ";
   }
 
   // Cursor Position
-  const auto& file_obj = editor->get_file();
-  auto edit_curs = editor->get_file_frame().get_curs();
+  const auto& file_obj = editor->file_obj;
+  auto edit_curs = editor->file_win.get_curs();
   r_str += fmt::format(
     "[{0}/{2}, {1}] ",
     edit_curs.y + 1,
@@ -41,7 +41,7 @@ auto status::render() -> void {
     );
 
   // Mode
-  switch ( editor->get_mode() ) {
+  switch ( editor->mode ) {
   case DEFAULT:
     r_str += "DEFAULT";
     break;
@@ -66,5 +66,6 @@ auto status::render() -> void {
 }
 
 auto status::begin() -> void {
-  move(get_coord().y, get_coord().x);
+  auto tmp = get_coord();
+  move(tmp.y, tmp.x);
 }

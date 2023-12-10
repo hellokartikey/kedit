@@ -57,15 +57,6 @@ class kedit {
  public:
   auto run() -> void;
 
-  auto get_command() -> const std::string&;
-  auto get_flash() -> const std::string&;
-  auto get_file() -> file_vec&;
-  auto get_mode() -> modes;
-  auto get_debug_status() -> bool;
-  auto get_size() -> const point&;
-  auto get_file_frame() -> const file&;
-  auto get_status_bar() -> const status&;
-
  private:
   // Curses Variables
   WINDOW* win;
@@ -97,6 +88,10 @@ class kedit {
   // Commands
   line command_input;
   cstream command_stream;
+
+  friend frame;
+  friend file;
+  friend status;
 };
 
 #endif
