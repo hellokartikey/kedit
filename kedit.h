@@ -24,6 +24,7 @@ class kedit {
   kedit(int argc, char* argv[]);
   ~kedit();
 
+ private:
   auto color_init() -> void;
 
   auto file_open() -> void;
@@ -35,9 +36,8 @@ class kedit {
   auto mode_command() -> void;
   auto mode_insert() -> void;
 
+  auto frame_init() -> void;
   auto frames_resize() -> void;
-
-  auto run() -> void;
 
   auto key_esc_to_default() -> void;
   auto key_move() -> void;
@@ -55,10 +55,12 @@ class kedit {
   auto command_version(cstream& cs) -> void;
 
  public:
+  auto run() -> void;
+
   auto get_command() -> const std::string&;
   auto get_flash() -> const std::string&;
   auto get_file() -> file_vec&;
-  auto get_mode() -> enum modes;
+  auto get_mode() -> modes;
   auto get_debug_status() -> bool;
   auto get_size() -> const point&;
   auto get_file_frame() -> const file&;

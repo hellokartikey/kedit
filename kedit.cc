@@ -17,8 +17,7 @@ kedit::kedit(int argc, char* argv[]) {
 
   getmaxyx(win, max.y, max.x);
 
-  status_bar.init(this);
-  file_win.init(this);
+  frame_init();
 
   color_init();
 
@@ -175,6 +174,11 @@ auto kedit::mode_insert() -> void {
   }
 
   key_esc_to_default();
+}
+
+auto kedit::frame_init() -> void {
+  status_bar.init(this);
+  file_win.init(this);
 }
 
 auto kedit::frames_resize() -> void {
