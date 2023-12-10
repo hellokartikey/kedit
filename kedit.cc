@@ -273,95 +273,96 @@ auto kedit::flash(std::string message) -> void {
 }
 
 auto kedit::command_parse() -> void {
-  cstream cs;
-  for ( auto& c: command_input ) cs << c;
+  command_stream.str(command_input);
 
-  while ( not cs.eof() ) {
+  while ( not command_stream.eof() ) {
     std::string s;
-    cs >> s;
+    command_stream >> s;
 
     // Open file
-    if ( s == "open" ) command_open(cs);
-    else if ( s == "o" ) command_open(cs);
+    if ( s == "open" ) command_open();
+    else if ( s == "o" ) command_open();
 
-    else if ( s == "close" ) command_close(cs);
-    else if ( s == "c" ) command_close(cs);
+    else if ( s == "close" ) command_close();
+    else if ( s == "c" ) command_close();
 
     // Save file
-    else if ( s == "save" ) command_save(cs);
-    else if ( s == "s" ) command_save(cs);
+    else if ( s == "save" ) command_save();
+    else if ( s == "s" ) command_save();
 
     // Debug info
-    else if ( s == "debug" ) command_debug(cs);
+    else if ( s == "debug" ) command_debug();
 
     // Version info
-    else if ( s == "version" ) command_version(cs);
-    else if ( s == "v" ) command_version(cs);
+    else if ( s == "version" ) command_version();
+    else if ( s == "v" ) command_version();
 
     // Quit 
-    else if ( s == "quit" ) command_quit(cs);
-    else if ( s == "exit" ) command_quit(cs);
-    else if ( s == "q" ) command_quit(cs);
+    else if ( s == "quit" ) command_quit();
+    else if ( s == "exit" ) command_quit();
+    else if ( s == "q" ) command_quit();
 
-    else command_default(cs);
+    else command_default();
   }
 
   // Reset the command stream
   command_input.clear();
+  command_stream.str(""s);
+  command_stream.clear();
   cmd_x = 0;
 }
 
-auto kedit::command_default(cstream& cs) -> void {
+auto kedit::command_default() -> void {
   flash("Command does not exist");
   mode = DEFAULT;
 }
 
-auto kedit::command_open(cstream& cs) -> void {
-  if ( cs.eof() ) {
+auto kedit::command_open() -> void {
+  if ( command_stream.eof() ) {
     flash("No file name provided");
     return;
   }
 
-  cs >> file_name;
+  command_stream >> file_name;
   file_open();
 
   mode = INSERT;
 }
 
-auto kedit::command_close(cstream& cs) -> void {
+auto kedit::command_close() -> void {
   file_close();
+  file_clear();
   mode = DEFAULT;
 }
 
-auto kedit::command_debug(cstream& cs) -> void {
+auto kedit::command_debug() -> void {
   // If no arguements, toggle true/false
-  if ( cs.eof() ) {
+  if ( command_stream.eof() ) {
     show_debug_info = ! show_debug_info;
-    return;
+  } else {
+    std::string opt;
+    command_stream >> opt;
+    if ( opt == "true" ) show_debug_info = true;
+    else if ( opt == "false" ) show_debug_info = false;
   }
 
-  std::string opt;
-  cs >> opt;
-  if ( opt == "true" ) show_debug_info = true;
-  else if ( opt == "false" ) show_debug_info = false;
-
   mode = DEFAULT;
 }
 
-auto kedit::command_quit(cstream& cs) -> void {
+auto kedit::command_quit() -> void {
   mode = EXIT;
 }
 
-auto kedit::command_save(cstream& cs) -> void {
-  if ( not cs.eof() ) {
-    cs >> file_name;
+auto kedit::command_save() -> void {
+  if ( not command_stream.eof() ) {
+    command_stream >> file_name;
   }
   
   file_save();
   mode = DEFAULT;
 }
 
-auto kedit::command_version(cstream& cs) -> void {
+auto kedit::command_version() -> void {
   flash(fmt::format("{}", VERSION));
   mode = DEFAULT;
 }

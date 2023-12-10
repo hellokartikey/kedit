@@ -46,13 +46,13 @@ class kedit {
   auto flash(std::string message = ""s) -> void;
 
   auto command_parse() -> void;
-  auto command_default(cstream& cs) -> void;
-  auto command_open(cstream& cs) -> void;
-  auto command_close(cstream& cs) -> void;
-  auto command_debug(cstream& cs) -> void;
-  auto command_quit(cstream& cs) -> void;
-  auto command_save(cstream& cs) -> void;
-  auto command_version(cstream& cs) -> void;
+  auto command_default() -> void;
+  auto command_open() -> void;
+  auto command_close() -> void;
+  auto command_debug() -> void;
+  auto command_quit() -> void;
+  auto command_save() -> void;
+  auto command_version() -> void;
 
  public:
   auto run() -> void;
@@ -78,7 +78,7 @@ class kedit {
   file file_win;
 
   // Command cursor position
-  int cmd_x;
+  int cmd_x = 0;
 
   // Keyboard input
   int ch = 0;
@@ -87,7 +87,7 @@ class kedit {
   modes mode = DEFAULT;
   bool show_debug_info = true;
 
-  std::string flash_msg = ""s;
+  std::string flash_msg;
 
   // File Handeling
   std::fstream file_stream;
@@ -96,6 +96,7 @@ class kedit {
 
   // Commands
   line command_input;
+  cstream command_stream;
 };
 
 #endif

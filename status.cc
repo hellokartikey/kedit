@@ -25,6 +25,11 @@ auto status::render() -> void {
     l_str += editor->get_flash() + " ";
   }
 
+  // Debug Info
+  if ( editor->get_debug_status() ) {
+    r_str += "DEBUG ";
+  }
+
   // Cursor Position
   const auto& file_obj = editor->get_file();
   auto edit_curs = editor->get_file_frame().get_curs();
